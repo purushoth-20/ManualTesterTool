@@ -14,5 +14,4 @@ public class MainApp {
             new ui.MainFrame().setVisible(true);
         });
     }
-
 }
