@@ -33,9 +33,8 @@ public class WordEvidenceWriter implements EvidenceWriter {
             titleRun.setBold(true);
             titleRun.setFontSize(16);
 
-            // Tunables
-            final int imageWidthPoints = 460;   // bigger screenshot
-            final int indent = 200;             // tighter indent to use the extra width
+            final int imageWidthPoints = 460;
+            final int indent = 200;
 
             for (StepEntry entry : model.getEntries()) {
                 XWPFParagraph desc = doc.createParagraph();
@@ -45,7 +44,7 @@ public class WordEvidenceWriter implements EvidenceWriter {
                 XWPFRun descRun = desc.createRun();
                 descRun.setBold(true);
                 descRun.setFontSize(11);
-                descRun.setText("Step " + entry.getStepNumber() + ": " + entry.getDescription());
+                descRun.setText(stepLabel(entry));
 
                 XWPFParagraph imgPara = doc.createParagraph();
                 imgPara.setIndentationLeft(indent);
@@ -65,19 +64,21 @@ public class WordEvidenceWriter implements EvidenceWriter {
                     }
                 }
 
-                XWPFParagraph resultPara = doc.createParagraph();
-                resultPara.setIndentationLeft(indent);
-                resultPara.setSpacingAfter(100);
-                XWPFRun resultRun = resultPara.createRun();
-                resultRun.setBold(true);
-                resultRun.setFontSize(10);
-                resultRun.setText("Result: " + entry.getResult());
-                if (StepEntry.PASS.equals(entry.getResult())) {
-                    resultRun.setColor("2E7D32");
-                } else if (StepEntry.FAIL.equals(entry.getResult())) {
-                    resultRun.setColor("C62828");
-                } else {
-                    resultRun.setColor("757575");
+                // Only show a Result line once it's actually been set (Pass/Fail) —
+                // skip it entirely while still PENDING.
+                if (!StepEntry.PENDING.equals(entry.getResult())) {
+                    XWPFParagraph resultPara = doc.createParagraph();
+                    resultPara.setIndentationLeft(indent);
+                    resultPara.setSpacingAfter(100);
+                    XWPFRun resultRun = resultPara.createRun();
+                    resultRun.setBold(true);
+                    resultRun.setFontSize(10);
+                    resultRun.setText("Result: " + entry.getResult());
+                    if (StepEntry.PASS.equals(entry.getResult())) {
+                        resultRun.setColor("2E7D32");
+                    } else {
+                        resultRun.setColor("C62828");
+                    }
                 }
             }
 
@@ -89,13 +90,26 @@ public class WordEvidenceWriter implements EvidenceWriter {
         return outputFile;
     }
 
-    /** Narrow margins (0.5in each side) so the wider screenshot fits without overflowing the page. */
+    /**
+     * Builds the step heading. If the description is just the auto-generated
+     * fallback ("Step 3"), avoid the "Step 3: Step 3" duplication and show
+     * plain "Step 3:" instead. Real Gherkin descriptions still show in full,
+     * e.g. "Step 1: Given I launch the app".
+     */
+    private String stepLabel(StepEntry entry) {
+        String fallback = "Step " + entry.getStepNumber();
+        if (fallback.equals(entry.getDescription())) {
+            return fallback + ":";
+        }
+        return fallback + ": " + entry.getDescription();
+    }
+
     private void applyNarrowMargins(XWPFDocument doc) {
         CTSectPr sectPr = doc.getDocument().getBody().isSetSectPr()
                 ? doc.getDocument().getBody().getSectPr()
                 : doc.getDocument().getBody().addNewSectPr();
         CTPageMar pageMar = sectPr.isSetPgMar() ? sectPr.getPgMar() : sectPr.addNewPgMar();
-        pageMar.setLeft(BigInteger.valueOf(720));   // 0.5 inch (720 twips)
+        pageMar.setLeft(BigInteger.valueOf(720));
         pageMar.setRight(BigInteger.valueOf(720));
         pageMar.setTop(BigInteger.valueOf(720));
         pageMar.setBottom(BigInteger.valueOf(720));

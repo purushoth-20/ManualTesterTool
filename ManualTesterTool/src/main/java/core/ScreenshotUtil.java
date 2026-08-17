@@ -16,10 +16,14 @@ import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.TimeZone;
 
 public final class ScreenshotUtil {
 
     private static final SimpleDateFormat TIME_FORMAT = new SimpleDateFormat("HH:mm:ss");
+    static {
+        TIME_FORMAT.setTimeZone(TimeZone.getTimeZone("Asia/Kolkata"));
+    }
     private static final int PADDING = 10;
 
     private ScreenshotUtil() {
@@ -31,8 +35,9 @@ public final class ScreenshotUtil {
         return robot.createScreenCapture(new Rectangle(screenSize));
     }
 
+    /** e.g. "14:32:07 IST" */
     public static String currentTimestamp() {
-        return TIME_FORMAT.format(new Date());
+        return TIME_FORMAT.format(new Date()) + " IST";
     }
 
     public static String formatDuration(long millis) {
