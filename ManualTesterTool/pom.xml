@@ -13,7 +13,6 @@
     </properties>
 
     <dependencies>
-        <!-- Word (.docx) generation -->
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi</artifactId>
@@ -24,12 +23,17 @@
             <artifactId>poi-ooxml</artifactId>
             <version>5.2.5</version>
         </dependency>
+        <!-- Silences the "Log4j2 could not find a logging implementation" warning -->
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>2.23.1</version>
+        </dependency>
     </dependencies>
 
     <build>
         <finalName>ManualTesterTool</finalName>
         <plugins>
-            <!-- Builds a single runnable jar with all dependencies bundled -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>

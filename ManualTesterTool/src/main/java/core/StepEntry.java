@@ -2,12 +2,6 @@ package core;
 
 import java.io.File;
 
-/**
- * Represents a single captured evidence step:
- * a Gherkin (or fallback "Step N") description, its screenshot,
- * the timestamp/duration burned into that screenshot, and the
- * pass/fail verdict chosen by the user.
- */
 public class StepEntry {
 
     public static final String PENDING = "PENDING";

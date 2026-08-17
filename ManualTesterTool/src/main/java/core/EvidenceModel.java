@@ -10,12 +10,9 @@ public class EvidenceModel {
         WORD, EXCEL
     }
 
-    private final String fileName;
+    private String fileName;
     private final Format format;
-
-    /** Null/empty means "no Gherkin given" -> fallback Step 1, Step 2... mode. */
     private final List<String> gherkinSteps;
-
     private final List<StepEntry> entries = new ArrayList<>();
 
     public EvidenceModel(String fileName, Format format, List<String> gherkinSteps) {
@@ -48,13 +45,21 @@ public class EvidenceModel {
         entries.add(entry);
     }
 
+    public StepEntry removeLastEntry() {
+        if (entries.isEmpty()) {
+            return null;
+        }
+        return entries.remove(entries.size() - 1);
+    }
+
     public StepEntry getLastEntry() {
         return entries.isEmpty() ? null : entries.get(entries.size() - 1);
     }
 
     /**
-     * Description for the NEXT capture (1-indexed step count already taken into entries.size()).
-     * Uses the matching Gherkin line if available, otherwise falls back to "Step N".
+     * Description for a given capture number. Uses the matching Gherkin line
+     * while available; once Gherkin steps run out, falls back to "Step N"
+     * indefinitely (no cap, no "exhausted" state).
      */
     public String describeStep(int stepNumberOneIndexed) {
         int idx = stepNumberOneIndexed - 1;
@@ -64,9 +69,8 @@ public class EvidenceModel {
         return "Step " + stepNumberOneIndexed;
     }
 
-    /** True once every parsed Gherkin step has a captured entry (only meaningful when Gherkin was given). */
-    public boolean isComplete() {
-        return hasGherkinSteps() && entries.size() >= gherkinSteps.size();
+    public boolean hasAnyFailure() {
+        return entries.stream().anyMatch(e -> StepEntry.FAIL.equals(e.getResult()));
     }
 
     public String fileExtension() {

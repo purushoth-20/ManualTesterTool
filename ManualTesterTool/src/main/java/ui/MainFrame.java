@@ -8,7 +8,6 @@ import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
@@ -17,6 +16,7 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
+import java.io.File;
 import java.util.List;
 
 public class MainFrame extends JFrame {
@@ -26,17 +26,32 @@ public class MainFrame extends JFrame {
     private final JTextArea gherkinArea = new JTextArea(10, 40);
     private final JLabel statusLabel = new JLabel(" ");
 
+    /** Non-null when continuing an existing Excel workbook (adding another sheet to it). */
+    private final File continuationWorkbook;
+
     public MainFrame() {
+        this(null);
+    }
+
+    public MainFrame(File continuationWorkbook) {
         super("Manual Tester Tool - Setup");
+        this.continuationWorkbook = continuationWorkbook;
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout(10, 10));
 
-        JPanel topPanel = new JPanel(new GridLayout(2, 2, 8, 8));
+        JPanel topPanel = new JPanel(new GridLayout(continuationWorkbook != null ? 3 : 2, 2, 8, 8));
         topPanel.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
         topPanel.add(new JLabel("Output Format:"));
         topPanel.add(formatBox);
-        topPanel.add(new JLabel("File Name (required):"));
+        topPanel.add(new JLabel(continuationWorkbook != null ? "Sheet Name (required):" : "File Name (required):"));
         topPanel.add(fileNameField);
+
+        if (continuationWorkbook != null) {
+            formatBox.setSelectedIndex(1);
+            formatBox.setEnabled(false);
+            topPanel.add(new JLabel("Continuing workbook:"));
+            topPanel.add(new JLabel(continuationWorkbook.getName()));
+        }
         add(topPanel, BorderLayout.NORTH);
 
         JPanel centerPanel = new JPanel(new BorderLayout(6, 6));
@@ -59,7 +74,7 @@ public class MainFrame extends JFrame {
         bottomPanel.add(buttonPanel, BorderLayout.SOUTH);
         add(bottomPanel, BorderLayout.SOUTH);
 
-        setPreferredSize(new Dimension(560, 460));
+        setPreferredSize(new Dimension(560, continuationWorkbook != null ? 500 : 460));
         pack();
         setLocationRelativeTo(null);
     }
@@ -67,17 +82,14 @@ public class MainFrame extends JFrame {
     private void onSubmit() {
         String fileName = fileNameField.getText() == null ? "" : fileNameField.getText().trim();
         if (fileName.isEmpty()) {
-            statusLabel.setText("File name is required \u2014 the app can't proceed without it.");
+            statusLabel.setText("Name is required \u2014 the app can't proceed without it.");
             return;
         }
-        // Keep the filename filesystem-safe
         fileName = fileName.replaceAll("[\\\\/:*?\"<>|]", "_");
 
         String gherkinText = gherkinArea.getText();
-
         List<String> steps;
         if (GherkinParser.isBlank(gherkinText)) {
-            // Allowed: proceed with no Gherkin -> fallback Step 1, Step 2... mode
             steps = null;
         } else if (!GherkinParser.isValidGherkin(gherkinText)) {
             statusLabel.setText("That doesn't look like valid Gherkin. Use Given/When/Then/And/But, or leave the box empty.");
@@ -92,12 +104,7 @@ public class MainFrame extends JFrame {
 
         EvidenceModel model = new EvidenceModel(fileName, format, steps);
 
-        JOptionPane.showMessageDialog(this,
-                "Setup complete. A floating capture toggle will now appear.\n"
-                        + "Click it to capture + embed a screenshot for each step.",
-                "Ready", JOptionPane.INFORMATION_MESSAGE);
-
         dispose();
-        new CaptureToggle(model).setVisible(true);
+        new CaptureToggle(model, continuationWorkbook).setVisible(true);
     }
 }

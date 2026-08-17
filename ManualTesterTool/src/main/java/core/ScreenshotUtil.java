@@ -25,7 +25,6 @@ public final class ScreenshotUtil {
     private ScreenshotUtil() {
     }
 
-    /** Captures the full screen. */
     public static BufferedImage captureScreen() throws AWTException {
         Robot robot = new Robot();
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
@@ -36,7 +35,6 @@ public final class ScreenshotUtil {
         return TIME_FORMAT.format(new Date());
     }
 
-    /** Formats a millisecond duration as e.g. "3s" or "1m 05s". */
     public static String formatDuration(long millis) {
         long totalSeconds = millis / 1000;
         long minutes = totalSeconds / 60;
@@ -47,11 +45,6 @@ public final class ScreenshotUtil {
         return seconds + "s";
     }
 
-    /**
-     * Draws the timestamp in the top-right corner and the duration in the
-     * bottom-right corner of the image, each on a semi-transparent badge
-     * so it stays legible over any background.
-     */
     public static BufferedImage embedTimestampAndDuration(BufferedImage source, String timestamp, String durationLabel) {
         BufferedImage result = new BufferedImage(source.getWidth(), source.getHeight(), BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = result.createGraphics();
