@@ -1,10 +1,6 @@
 package core;
 
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.Font;
-import org.apache.poi.ss.usermodel.IndexedColors;
-import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFClientAnchor;
 import org.apache.poi.xssf.usermodel.XSSFDrawing;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
@@ -85,6 +81,7 @@ public class ExcelEvidenceWriter implements EvidenceWriter {
         sheet.setColumnWidth(1, 45 * 256);
         sheet.setColumnWidth(2, 45 * 256);
         sheet.setColumnWidth(3, 12 * 256);
+        sheet.setColumnWidth(4, 35 * 256); // NEW — Hint column
 
         Font headerFont = wb.createFont();
         headerFont.setBold(true);
@@ -95,7 +92,8 @@ public class ExcelEvidenceWriter implements EvidenceWriter {
         headerStyle.setFont(headerFont);
 
         Row header = sheet.createRow(0);
-        String[] headers = {"Step", "Description", "Screenshot", "Result"};
+        // NEW: "Hint" appended as a 5th header column — existing 4 columns/indices untouched.
+        String[] headers = {"Step", "Description", "Screenshot", "Result", "Hint"};
         for (int i = 0; i < headers.length; i++) {
             Cell c = header.createCell(i);
             c.setCellValue(headers[i]);
@@ -109,8 +107,16 @@ public class ExcelEvidenceWriter implements EvidenceWriter {
             Row row = sheet.createRow(rowIdx);
             row.setHeightInPoints(IMAGE_ROW_HEIGHT);
 
-            row.createCell(0).setCellValue(entry.getStepNumber());
-            row.createCell(1).setCellValue(entry.getDescription());
+            // NEW: a merged (continuation) capture leaves Step/Description blank
+            // rather than repeating the step number — visually it reads as
+            // "belongs with the row above," not as its own new step.
+            if (!entry.isContinuation()) {
+                row.createCell(0).setCellValue(entry.getStepNumber());
+                row.createCell(1).setCellValue(entry.getDescription());
+            } else {
+                row.createCell(0).setCellValue("");
+                row.createCell(1).setCellValue("");
+            }
 
             CellStyle resultStyle = wb.createCellStyle();
             Font resultFont = wb.createFont();
@@ -124,6 +130,12 @@ public class ExcelEvidenceWriter implements EvidenceWriter {
             Cell resultCell = row.createCell(3);
             resultCell.setCellValue(entry.getResult());
             resultCell.setCellStyle(resultStyle);
+
+            // NEW: Hint column — only written when non-blank, same skip-if-empty
+            // pattern used elsewhere in this codebase.
+            if (entry.getHint() != null && !entry.getHint().isBlank()) {
+                row.createCell(4).setCellValue(entry.getHint());
+            }
 
             if (entry.getImageFile() != null && entry.getImageFile().exists()) {
                 byte[] bytes = Files.readAllBytes(entry.getImageFile().toPath());

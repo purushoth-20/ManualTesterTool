@@ -37,14 +37,20 @@ public class WordEvidenceWriter implements EvidenceWriter {
             final int indent = 200;
 
             for (StepEntry entry : model.getEntries()) {
-                XWPFParagraph desc = doc.createParagraph();
-                desc.setIndentationLeft(indent);
-                desc.setSpacingBefore(80);
-                desc.setSpacingAfter(40);
-                XWPFRun descRun = desc.createRun();
-                descRun.setBold(true);
-                descRun.setFontSize(11);
-                descRun.setText(stepLabel(entry));
+
+                // NEW: an Alt+click-merged capture belongs to the SAME step as the
+                // previous entry, so it doesn't get its own "Step N:" heading —
+                // it just appears directly below the previous screenshot.
+                if (!entry.isContinuation()) {
+                    XWPFParagraph desc = doc.createParagraph();
+                    desc.setIndentationLeft(indent);
+                    desc.setSpacingBefore(80);
+                    desc.setSpacingAfter(40);
+                    XWPFRun descRun = desc.createRun();
+                    descRun.setBold(true);
+                    descRun.setFontSize(11);
+                    descRun.setText(stepLabel(entry));
+                }
 
                 XWPFParagraph imgPara = doc.createParagraph();
                 imgPara.setIndentationLeft(indent);
@@ -62,6 +68,19 @@ public class WordEvidenceWriter implements EvidenceWriter {
                     } catch (org.apache.poi.openxml4j.exceptions.InvalidFormatException e) {
                         throw new IOException(e);
                     }
+                }
+
+                // NEW: hint, directly below the screenshot — only rendered when non-blank,
+                // same "skip while empty" pattern the Result line below already uses.
+                if (entry.getHint() != null && !entry.getHint().isBlank()) {
+                    XWPFParagraph hintPara = doc.createParagraph();
+                    hintPara.setIndentationLeft(indent);
+                    hintPara.setSpacingAfter(40);
+                    XWPFRun hintRun = hintPara.createRun();
+                    hintRun.setItalic(true);
+                    hintRun.setFontSize(10);
+                    hintRun.setColor("555555");
+                    hintRun.setText("Hint: " + entry.getHint());
                 }
 
                 // Only show a Result line once it's actually been set (Pass/Fail) —
